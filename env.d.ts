@@ -1,9 +1,3 @@
-type ENVIRONMENT_KEYS = [];
-
-type TupleToObject<T extends readonly string[]> = {
-  [P in T[number]]: string;
-};
-
 declare global {
   namespace NodeJS {
     interface ProcessEnv {

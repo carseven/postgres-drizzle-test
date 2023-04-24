@@ -29,10 +29,7 @@ const client = new Client({
   const db = drizzle(client);
 
   const allUsers = await db.select().from(user);
-  console.timeEnd();
-  console.log(allUsers);
 
-  console.time();
   await db.insert(user).values([
     {
       userId: +(allUsers[allUsers.length - 1]?.userId || 0) + 1,
@@ -40,6 +37,6 @@ const client = new Client({
       secondName: "Sanchez",
     },
   ]);
-  console.timeEnd();
+
   await client.end();
 })();
