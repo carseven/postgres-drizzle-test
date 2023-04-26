@@ -1,12 +1,13 @@
+type SecretKeys =
+  | "DATABASE_HOST"
+  | "DATABASE_NAME"
+  | "DATABASE_PORT"
+  | "DATABASE_USER"
+  | "DATABASE_USER_PASSWORD";
+
 declare global {
   namespace NodeJS {
-    interface ProcessEnv {
-      DATABASE_HOST: string;
-      DATABASE_NAME: string;
-      DATABASE_PORT: string;
-      DATABASE_USER: string;
-      DATABASE_USER_PASSWORD: string;
-    }
+    interface ProcessEnv extends Record<SecretKeys, string> {}
   }
 }
 export {};
