@@ -36,11 +36,9 @@ createServer(async (request, response) => {
 
   switch (method) {
     case "GET":
-      console.log("GET request");
       const allUsers = await db.select().from(user);
       response.writeHead(200, { "Content-Type": "application/json" });
       response.write(JSON.stringify(allUsers));
-      console.log(allUsers);
       response.end();
       break;
     case "POST":
