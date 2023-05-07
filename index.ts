@@ -1,7 +1,9 @@
 import { Client } from "pg";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { NodePgDatabase, drizzle } from "drizzle-orm/node-postgres";
 import { pgTable, serial, varchar } from "drizzle-orm/pg-core";
 import * as dotenv from "dotenv";
+
+import { createServer } from "http";
 
 // Load environment variables
 dotenv.config();
@@ -16,27 +18,93 @@ const client = new Client({
   ssl: true,
 });
 
-(async () => {
+let db: NodePgDatabase;
+const user = pgTable("user", {
+  userId: serial("userid").primaryKey(),
+  firstName: varchar("firstname", { length: 100 }),
+  secondName: varchar("secondname", { length: 100 }),
+});
+
+async function connectToDatabase() {
   await client.connect();
-  console.log("Motus database connected!");
+  db = drizzle(client);
+}
 
-  const user = pgTable("user", {
-    userId: serial("userid").primaryKey(),
-    firstName: varchar("firstname", { length: 100 }),
-    secondName: varchar("secondname", { length: 100 }),
-  });
+// Reference: https://nodejs.org/en/docs/guides/anatomy-of-an-http-transaction
+createServer(async (request, response) => {
+  const { headers, method, url } = request;
 
-  const db = drizzle(client);
+  switch (method) {
+    case "GET":
+      console.log("GET request");
+      const allUsers = await db.select().from(user);
+      response.writeHead(200, { "Content-Type": "application/json" });
+      response.write(JSON.stringify(allUsers));
+      console.log(allUsers);
+      response.end();
+      break;
+    case "POST":
+      let bodyChunks: Uint8Array[] = [];
+      request
+        .on("data", (chunk) => {
+          bodyChunks.push(chunk);
+        })
+        .on("end", async () => {
+          const body = Buffer.concat(bodyChunks).toString();
 
-  const allUsers = await db.select().from(user);
+          response.on("error", (err) => {
+            console.error(err);
+          });
 
-  await db.insert(user).values([
-    {
-      userId: +(allUsers[allUsers.length - 1]?.userId || 0) + 1,
-      firstName: "Noe",
-      secondName: "Sanchez",
-    },
-  ]);
+          response.writeHead(200, { "Content-Type": "application/json" });
 
-  await client.end();
-})();
+          const responseBody = { headers, method, url, body };
+
+          const userToAdd = JSON.parse(body) as {
+            firstName: string;
+            secondName: string;
+          };
+
+          // TODO: Validate input with ZOD
+          if (!userToAdd.firstName || !userToAdd.secondName) {
+            response.writeHead(404);
+            response.end();
+            return;
+          }
+
+          const allUsers = await db.select().from(user);
+          await db.insert(user).values([
+            {
+              userId: +(allUsers[allUsers.length - 1]?.userId || 0) + 1,
+              firstName: userToAdd.firstName,
+              secondName: userToAdd.secondName,
+            },
+          ]);
+
+          response.end(
+            JSON.stringify({
+              userId: +(allUsers[allUsers.length - 1]?.userId || 0) + 1,
+              firstName: userToAdd.firstName,
+              secondName: userToAdd.secondName,
+            })
+          );
+        });
+      break;
+    default:
+      response.writeHead(405);
+      response.end();
+  }
+}).listen("3000", async () => {
+  console.log("[Server] - Starting server at http://localhost:3000");
+  console.log("[DB] - Starting database connection");
+  await connectToDatabase();
+  console.log("[DB] - Database connection stablish");
+});
+
+// .close(async () => {
+//   console.log("[DB] - Closing database connection server");
+//   await client.end();
+//   console.log("[Server] - Closing server");
+// });
+
+//
