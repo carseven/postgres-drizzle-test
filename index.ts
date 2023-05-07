@@ -100,11 +100,3 @@ createServer(async (request, response) => {
   await connectToDatabase();
   console.log("[DB] - Database connection stablish");
 });
-
-// .close(async () => {
-//   console.log("[DB] - Closing database connection server");
-//   await client.end();
-//   console.log("[Server] - Closing server");
-// });
-
-//
