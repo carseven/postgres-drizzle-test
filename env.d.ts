@@ -1,9 +1,4 @@
-type SecretKeys =
-  | "DATABASE_HOST"
-  | "DATABASE_NAME"
-  | "DATABASE_PORT"
-  | "DATABASE_USER"
-  | "DATABASE_USER_PASSWORD";
+type SecretKeys = "DATABASE_URL";
 
 declare global {
   namespace NodeJS {
