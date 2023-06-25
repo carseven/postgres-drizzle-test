@@ -7,4 +7,5 @@
 -   [ ] Implement openApi doc
 -   [ ] Implement auth
 -   [ ] Refactor (Zod valdiator layer, auth layer, router layer, db schemas, repository and services layers) & Implement openApi from zod validations
+-   [ ] Implement test with vitest
 -   [ ] Benchmark performance
