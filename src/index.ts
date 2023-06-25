@@ -3,7 +3,6 @@ import { DbHelper } from './db/db-helper';
 import { EnvService } from './services/env.service';
 import { LoggerService } from './services/logger.service';
 import { CreateUrlShortener, UrlShortenerService } from './services/url-shortener.service';
-
 new EnvService();
 const loggerService = new LoggerService();
 loggerService.loggerMode = process.env.LOGGER_MODE;
@@ -12,6 +11,7 @@ const urlShortenerService = new UrlShortenerService(dbHelper, loggerService);
 
 // Reference: https://nodejs.org/en/docs/guides/anatomy-of-an-http-transaction
 createServer(async (request, response) => {
+    console.time();
     const { headers, method, url } = request;
     switch (method) {
         case 'GET': {
@@ -31,6 +31,7 @@ createServer(async (request, response) => {
                 response.writeHead(404);
             }
             response.end();
+            console.timeEnd();
             break;
         }
         case 'POST': {
@@ -81,6 +82,6 @@ createServer(async (request, response) => {
             response.writeHead(405);
             response.end();
     }
-}).listen('3000', async () => {
-    console.log('[Server] - Starting server at http://localhost:3000');
+}).listen('8080', async () => {
+    console.log('[Server] - Starting server at http://localhost:8080');
 });

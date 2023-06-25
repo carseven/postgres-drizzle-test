@@ -6,7 +6,10 @@
   "scripts": {
     "compile": "tsup src/index.ts --format cjs,esm --dts",
     "server": "node dist/index.js",
-    "dev": "pnpm run compile && pnpm run server"
+    "dev": "pnpm run compile && pnpm run server",
+    "docker:compile": "pnpm run compile && docker build . -t carseven/url-shortener",
+    "docker:run": "docker run -p 8080:8080 -d carseven/url-shortener",
+    "docker:kill": "docker ps -qf ancestor=carseven/url-shortener | xargs -I_ docker kill _"
   },
   "type": "module",
   "author": "Carles Serra",
