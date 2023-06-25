@@ -2,7 +2,11 @@ import { createServer } from 'http';
 import { DbHelper } from './db/db-helper';
 import { EnvService } from './services/env.service';
 import { LoggerService } from './services/logger.service';
-import { CreateUrlShortener, UrlShortenerService } from './services/url-shortener.service';
+import {
+    CreateUrlShortener,
+    DeleteUrlShortener,
+    UrlShortenerService,
+} from './services/url-shortener.service';
 new EnvService();
 const loggerService = new LoggerService();
 loggerService.loggerMode = process.env.LOGGER_MODE;
@@ -11,7 +15,6 @@ const urlShortenerService = new UrlShortenerService(dbHelper, loggerService);
 
 // Reference: https://nodejs.org/en/docs/guides/anatomy-of-an-http-transaction
 createServer(async (request, response) => {
-    console.time();
     const { headers, method, url } = request;
     switch (method) {
         case 'GET': {
@@ -31,7 +34,6 @@ createServer(async (request, response) => {
                 response.writeHead(404);
             }
             response.end();
-            console.timeEnd();
             break;
         }
         case 'POST': {
@@ -64,8 +66,96 @@ createServer(async (request, response) => {
                         response.end();
                         return;
                     }
-                    const result = await urlShortenerService.createUrlRedirect(validatedDto.data);
 
+                    const result = await urlShortenerService.createUrlRedirect(validatedDto.data);
+                    if (!result.success) {
+                        loggerService.error(result.errorMessage);
+                        response.writeHead(500);
+                        response.end();
+                        return;
+                    }
+
+                    response.writeHead(200);
+                    response.end();
+                });
+            break;
+        }
+        case 'PUT': {
+            const bodyChunks: Uint8Array[] = [];
+            request
+                .on('data', (chunk) => {
+                    bodyChunks.push(chunk);
+                })
+                .on('end', async () => {
+                    const body = Buffer.concat(bodyChunks).toString();
+
+                    response.on('error', (err) => {
+                        loggerService.error(err);
+                    });
+
+                    let rawDto: unknown;
+                    try {
+                        rawDto = JSON.parse(body);
+                    } catch (error: unknown) {
+                        loggerService.error(error);
+                        response.writeHead(500);
+                        response.end();
+                        return;
+                    }
+
+                    const validatedDto = CreateUrlShortener.safeParse(rawDto);
+                    if (!validatedDto.success) {
+                        loggerService.error(validatedDto.error);
+                        response.writeHead(500);
+                        response.end();
+                        return;
+                    }
+
+                    const result = await urlShortenerService.updateUrlRedirect(validatedDto.data);
+                    if (!result.success) {
+                        loggerService.error(result.errorMessage);
+                        response.writeHead(500);
+                        response.end();
+                        return;
+                    }
+
+                    response.writeHead(200);
+                    response.end();
+                });
+            break;
+        }
+        case 'DELETE': {
+            const bodyChunks: Uint8Array[] = [];
+            request
+                .on('data', (chunk) => {
+                    bodyChunks.push(chunk);
+                })
+                .on('end', async () => {
+                    const body = Buffer.concat(bodyChunks).toString();
+
+                    response.on('error', (err) => {
+                        loggerService.error(err);
+                    });
+
+                    let rawDto: unknown;
+                    try {
+                        rawDto = JSON.parse(body);
+                    } catch (error: unknown) {
+                        loggerService.error(error);
+                        response.writeHead(500);
+                        response.end();
+                        return;
+                    }
+
+                    const validatedDto = DeleteUrlShortener.safeParse(rawDto);
+                    if (!validatedDto.success) {
+                        loggerService.error(validatedDto.error);
+                        response.writeHead(500);
+                        response.end();
+                        return;
+                    }
+
+                    const result = await urlShortenerService.deleteUrlRedirect(validatedDto.data);
                     if (!result.success) {
                         loggerService.error(result.errorMessage);
                         response.writeHead(500);
