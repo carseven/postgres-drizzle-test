@@ -7,17 +7,28 @@ import {
     DeleteUrlShortener,
     UrlShortenerService,
 } from './services/url-shortener.service';
+import Router from './router/router';
+
 new EnvService();
 const loggerService = new LoggerService();
 loggerService.loggerMode = process.env.LOGGER_MODE;
 const dbHelper = new DbHelper();
 const urlShortenerService = new UrlShortenerService(dbHelper, loggerService);
 
+// Add routes
+// Match route and methods
+// Validate routes and schemas with zod
+// With route configuration create open api doc page
+
+const router = new Router();
+
 // Reference: https://nodejs.org/en/docs/guides/anatomy-of-an-http-transaction
 createServer(async (request, response) => {
     const { headers, method, url } = request;
     switch (method) {
         case 'GET': {
+            // TODO: Expose static open API /doc static file serve
+
             if (!url) {
                 response.writeHead(404);
                 response.end();
