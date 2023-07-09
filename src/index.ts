@@ -1,5 +1,6 @@
 import { createServer } from 'http';
 import { DbHelper } from './db/db-helper';
+import { AuthRequest, AuthService } from './services/auth.service';
 import { EnvService } from './services/env.service';
 import { LoggerService } from './services/logger.service';
 import {
@@ -7,31 +8,66 @@ import {
     DeleteUrlShortener,
     UrlShortenerService,
 } from './services/url-shortener.service';
-import Router from './router/router';
 
 new EnvService();
 const loggerService = new LoggerService();
 loggerService.loggerMode = process.env.LOGGER_MODE;
 const dbHelper = new DbHelper();
 const urlShortenerService = new UrlShortenerService(dbHelper, loggerService);
+const authService = new AuthService(dbHelper, loggerService);
 
 // Add routes
 // Match route and methods
-// Validate routes and schemas with zod
+// Validate routes and schemas with zod and validate auth
 // With route configuration create open api doc page
-
-const router = new Router();
 
 // Reference: https://nodejs.org/en/docs/guides/anatomy-of-an-http-transaction
 createServer(async (request, response) => {
     const { headers, method, url } = request;
+    if (!headers.authorization) {
+        response.writeHead(401);
+        response.end();
+        return;
+    }
+
+    const removedBearer = headers.authorization.replace('Bearer', '').trim();
+
+    // Transform from base64 to json
+    let requestAuth: unknown;
+    try {
+        requestAuth = JSON.parse(Buffer.from(removedBearer, 'base64').toString());
+    } catch (error) {
+        console.error(error);
+        response.writeHead(401);
+        response.end();
+        return;
+    }
+
+    // Validate schema with zod
+    const authParsed = AuthRequest.safeParse(requestAuth);
+    if (!authParsed.success) {
+        response.writeHead(401);
+        response.end();
+        return;
+    }
+
+    // TODO: Encrypt password for security and implement session token and expiration policies
+    // /login, refresh token and logout
+
+    // Check valid auth (Probably good idea to add cache layer)
+    const auth = authParsed.data;
+    const isValidAuth = await authService.validateEmailAndPassword(auth.email, auth.password);
+    if (!isValidAuth) {
+        response.writeHead(401);
+        response.end();
+        return;
+    }
+
     switch (method) {
         case 'GET': {
             // TODO: Expose static open API /doc static file serve
 
             if (!url) {
-                response.writeHead(404);
-                response.end();
                 break;
             }
 
